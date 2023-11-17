@@ -1,0 +1,42 @@
+pipeline{
+    agent any
+    
+    environment {
+        GITHUB_TOKEN= credentials('github-token')
+    }
+    
+    stages{
+        stage("Clone Code"){
+            steps{
+                echo "Cloning the code"
+                git url: "https://github.com/Ashish8800/classs.git/", branch: "main"
+            }
+            
+        }
+        stage("building the code"){
+            steps{
+                echo "Building the Image"
+                sh "cd ${WORKSPACE} && sudo docker build -t my-node-app ."
+                sh "docker tag my-node-app ghcr.io/pratyush-82/node:latest"
+            }
+            
+        }
+        stage("Push to Docker Hub"){
+            steps{
+                echo "Pushing the Image"
+                sh "export CR_PAT=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"
+                sh "echo $GITHUB_TOKEN_PSW | docker login ghcr.io -u $GITHUB_TOKEN_USR --password-stdin"
+                sh "docker push ghcr.io/pratyush-82/node"
+                
+            }
+            
+        }
+        stage("Deploy"){
+            steps{
+                echo "Deploying the Container"
+                sh "docker-compose down && docker-compose up -d"
+            }
+            
+        }
+    }
+}
